@@ -1,0 +1,19 @@
+{
+  "name": "projeto-tabela-alunos",
+  "version": "1.0.0",
+  "description": "Projeto CRUD Node.js + Supabase com Cursos (1:N) Alunos",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.3"
+  }
+}

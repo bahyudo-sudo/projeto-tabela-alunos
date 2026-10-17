@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Gestão Escolar Completo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Sistema de Gestão Escolar</h1>
+
+    <!-- SEÇÃO DE CURSOS -->
+    <section class="card">
+      <h2>Cadastrar Curso</h2>
+      <form id="form-curso">
+        <input type="text" id="curso-nome" placeholder="Nome do Curso" required>
+        <div class="row">
+          <input type="number" id="curso-carga" placeholder="Carga Horária (horas)" required>
+          <select id="curso-turno" required>
+            <option value="">Selecione o Turno</option>
+            <option value="Manhã">Manhã</option>
+            <option value="Tarde">Tarde</option>
+            <option value="Noite">Noite</option>
+            <option value="Integral">Integral</option>
+            <option value="EAD">EAD</option>
+          </select>
+        </div>
+        <button type="submit">Salvar Curso</button>
+      </form>
+      <h3>Lista de Cursos</h3>
+      <ul id="lista-cursos"></ul>
+    </section>
+
+    <!-- SEÇÃO DE ALUNOS -->
+    <section class="card">
+      <h2>Cadastrar Aluno</h2>
+      <form id="form-aluno">
+        <input type="text" id="aluno-nome" placeholder="Nome Completo do Aluno" required>
+        <div class="row">
+          <input type="text" id="aluno-ra" placeholder="RA / Matrícula" required>
+          <input type="email" id="aluno-email" placeholder="E-mail" required>
+        </div>
+        <div class="row">
+          <input type="tel" id="aluno-telefone" placeholder="Telefone / WhatsApp">
+          <input type="date" id="aluno-nascimento" placeholder="Data de Nascimento">
+        </div>
+        <select id="aluno-curso" required>
+          <option value="">Selecione um Curso</option>
+        </select>
+        <button type="submit">Salvar Aluno</button>
+      </form>
+      <h3>Lista de Alunos</h3>
+      <ul id="lista-alunos"></ul>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

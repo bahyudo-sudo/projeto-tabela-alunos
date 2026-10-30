@@ -1,134 +1,289 @@
-document.addEventListener('DOMContentLoaded', () => {
-  carregarCursos();
-  carregarAlunos();
+// 1. MAPEAMENTO DOS ELEMENTOS DO DOM
+const formCurso = document.getElementById('form-curso');
+const inputCursoNome = document.getElementById('curso-nome');
+const inputCursoCarga = document.getElementById('curso-carga');
+const selectCursoTurno = document.getElementById('curso-turno');
+const tabelaCursos = document.getElementById('tabela-cursos');
 
-  document.getElementById('form-curso').addEventListener('submit', cadastrarCurso);
-  document.getElementById('form-aluno').addEventListener('submit', cadastrarAluno);
-});
+const formAluno = document.getElementById('form-aluno');
+const inputAlunoNome = document.getElementById('aluno-nome');
+const inputAlunoRa = document.getElementById('aluno-ra');
+const inputAlunoEmail = document.getElementById('aluno-email');
+const inputAlunoTel = document.getElementById('aluno-telefone');
+const inputAlunoNasc = document.getElementById('aluno-nascimento');
+const selectAlunoCurso = document.getElementById('aluno-curso');
+const tabelaAlunos = document.getElementById('tabela-alunos');
 
-async function carregarCursos() {
-  const res = await fetch('/api/cursos');
-  const cursos = await res.json();
+const statusAlunos = document.getElementById('alunos-status');
+const sentinelaAlunos = document.getElementById('sentinela-alunos');
 
-  const listaCursos = document.getElementById('lista-cursos');
-  const selectCurso = document.getElementById('aluno-curso');
+// Elementos do Modal de Edição
+const modal = document.getElementById('modal');
+const modalFundo = document.getElementById('modal-fundo');
+const btnCancelar = document.getElementById('btn-cancelar');
+const formEdicao = document.getElementById('form-edicao');
+const editNome = document.getElementById('edit-nome');
+const editRa = document.getElementById('edit-ra');
+const editEmail = document.getElementById('edit-email');
+const editCurso = document.getElementById('edit-curso');
 
-  listaCursos.innerHTML = '';
-  selectCurso.innerHTML = '<option value="">Selecione um Curso</option>';
+// 2. VARIÁVEIS DE CONTROLE DE ROLAGEM / PAGINAÇÃO
+const ALUNOS_POR_PAGINA = 5;
+let alunosInicio = 0;
+let alunosTotal = 0;
+let alunosCarregando = false;
+let alunosTemMais = true;
 
-  cursos.forEach(curso => {
-    const li = document.createElement('li');
-    const carga = curso.carga_horaria ? `${curso.carga_horaria}h` : 'N/A';
-    const turno = curso.turno || 'N/A';
-    li.innerHTML = `
-      <div>
-        <strong>${curso.nome}</strong> <br>
-        <small>Carga: ${carga} | Turno: ${turno}</small>
-      </div>
-      <button onclick="deletarCurso(${curso.id})">Excluir</button>
-    `;
-    listaCursos.appendChild(li);
+// 3. FUNÇÕES DE CURSOS
 
-    const option = document.createElement('option');
-    option.value = curso.id;
-    option.textContent = `${curso.nome} (${turno})`;
-    selectCurso.appendChild(option);
-  });
-}
+async function listarCursos() {
+  try {
+    const resposta = await fetch('/cursos');
+    const cursos = await resposta.json();
 
-async function cadastrarCurso(e) {
-  e.preventDefault();
-  const nome = document.getElementById('curso-nome').value.trim();
-  const carga_horaria = document.getElementById('curso-carga').value;
-  const turno = document.getElementById('curso-turno').value;
+    if (!resposta.ok) throw new Error(cursos.erro || 'Erro ao carregar cursos');
 
-  if (!nome || !carga_horaria || !turno) return;
+    selectAlunoCurso.innerHTML = '<option value="">Selecione um Curso</option>';
+    
+    if (cursos.length === 0) {
+      tabelaCursos.innerHTML = '<tr><td colspan="4">Nenhum curso registrado.</td></tr>';
+      return;
+    }
 
-  const res = await fetch('/api/cursos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nome, carga_horaria, turno })
-  });
+    tabelaCursos.innerHTML = '';
+    cursos.forEach((curso) => {
+      selectAlunoCurso.appendChild(new Option(curso.nome, curso.id));
 
-  if (res.ok) {
-    document.getElementById('form-curso').reset();
-    carregarCursos();
-  } else {
-    const err = await res.json();
-    alert('Erro ao salvar curso: ' + err.error);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${curso.nome}</td>
+        <td>${curso.carga || '-'} h</td>
+        <td>${curso.turno || '-'}</td>
+        <td>
+          <button type="button" onclick="excluirCurso(${curso.id})">Excluir</button>
+        </td>
+      `;
+      tabelaCursos.appendChild(tr);
+    });
+  } catch (erro) {
+    tabelaCursos.innerHTML = `<tr><td colspan="4" style="color:red">${erro.message}</td></tr>`;
   }
 }
 
-async function deletarCurso(id) {
+async function salvarCurso(evento) {
+  evento.preventDefault();
+
+  const novoCurso = {
+    nome: inputCursoNome.value.trim(),
+    carga: Number(inputCursoCarga.value),
+    turno: selectCursoTurno.value
+  };
+
+  try {
+    const resposta = await fetch('/cursos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novoCurso)
+    });
+    const dados = await resposta.json();
+
+    if (!resposta.ok) throw new Error(dados.erro || 'Erro ao salvar curso');
+
+    formCurso.reset();
+    await listarCursos();
+  } catch (erro) {
+    alert(erro.message);
+  }
+}
+
+async function excluirCurso(id) {
   if (!confirm('Deseja realmente excluir este curso?')) return;
-  const res = await fetch(`/api/cursos/${id}`, { method: 'DELETE' });
-  if (res.ok) {
-    carregarCursos();
-    carregarAlunos();
-  } else {
-    const err = await res.json();
-    alert('Erro ao excluir curso: ' + err.error);
+
+  try {
+    const resposta = await fetch(`/cursos/${id}`, { method: 'DELETE' });
+    const dados = await resposta.json();
+
+    if (!resposta.ok) throw new Error(dados.erro || 'Erro ao excluir curso');
+
+    await listarCursos();
+  } catch (erro) {
+    alert(erro.message);
   }
 }
 
-async function carregarAlunos() {
-  const res = await fetch('/api/alunos');
-  const alunos = await res.json();
+// 4. FUNÇÕES DE ALUNOS (COM TABELA DINÂMICA)
 
-  const listaAlunos = document.getElementById('lista-alunos');
-  listaAlunos.innerHTML = '';
+async function listarAlunos(acrescentar = false) {
+  if (acrescentar && (alunosCarregando || !alunosTemMais)) return;
 
-  alunos.forEach(aluno => {
-    const li = document.createElement('li');
-    const nomeCurso = aluno.cursos ? aluno.cursos.nome : 'Sem Curso';
-    const email = aluno.email ? ` | ${aluno.email}` : '';
-    const tel = aluno.telefone ? ` | Tel: ${aluno.telefone}` : '';
-    const nascio = aluno.data_nascimento ? ` | Nasc: ${aluno.data_nascimento}` : '';
+  alunosCarregando = true;
 
-    li.innerHTML = `
-      <div>
-        <strong>${aluno.nome}</strong> (RA: ${aluno.ra})<br>
-        <small>Curso: ${nomeCurso}${email}${tel}${nascio}</small>
-      </div>
-      <button onclick="deletarAluno(${aluno.id})">Excluir</button>
-    `;
-    listaAlunos.appendChild(li);
-  });
-}
+  if (!acrescentar) {
+    alunosInicio = 0;
+    tabelaAlunos.innerHTML = '';
+    statusAlunos.textContent = 'Carregando...';
+  }
 
-async function cadastrarAluno(e) {
-  e.preventDefault();
-  const nome = document.getElementById('aluno-nome').value.trim();
-  const ra = document.getElementById('aluno-ra').value.trim();
-  const email = document.getElementById('aluno-email').value.trim();
-  const telefone = document.getElementById('aluno-telefone').value.trim();
-  const data_nascimento = document.getElementById('aluno-nascimento').value;
-  const curso_id = document.getElementById('aluno-curso').value;
+  try {
+    const url = `/alunos?inicio=${alunosInicio}&limite=${ALUNOS_POR_PAGINA}`;
+    const resposta = await fetch(url);
+    const dados = await resposta.json();
 
-  if (!nome || !ra || !curso_id) return;
+    if (!resposta.ok) throw new Error(dados.erro || 'Erro ao carregar alunos');
 
-  const res = await fetch('/api/alunos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nome, ra, email, telefone, data_nascimento, curso_id })
-  });
+    const lista = dados.alunos || [];
+    alunosTotal = dados.total || 0;
 
-  if (res.ok) {
-    document.getElementById('form-aluno').reset();
-    carregarAlunos();
-  } else {
-    const err = await res.json();
-    alert('Erro ao salvar aluno: ' + err.error);
+    if (lista.length === 0 && !acrescentar) {
+      tabelaAlunos.innerHTML = '<tr><td colspan="5">Nenhum aluno registrado.</td></tr>';
+      statusAlunos.textContent = '';
+      alunosTemMais = false;
+      return;
+    }
+
+    lista.forEach((aluno) => {
+      const tr = document.createElement('tr');
+      const alunoJson = JSON.stringify(aluno).replace(/'/g, "&apos;");
+      tr.innerHTML = `
+        <td>${aluno.nome}</td>
+        <td>${aluno.ra}</td>
+        <td>${aluno.email || '-'}</td>
+        <td>${aluno.curso ? aluno.curso.nome : '-'}</td>
+        <td>
+          <button type="button" onclick='abrirModalEditar(${alunoJson})'>Editar</button>
+          <button type="button" onclick="excluirAluno('${aluno.ra}')">Excluir</button>
+        </td>
+      `;
+      tabelaAlunos.appendChild(tr);
+    });
+
+    alunosInicio += lista.length;
+    alunosTemMais = alunosInicio < alunosTotal;
+
+    if (alunosTemMais) {
+      statusAlunos.textContent = `Mostrando ${alunosInicio} de ${alunosTotal}. Role a tela para carregar mais.`;
+    } else {
+      statusAlunos.textContent = `Mostrando ${alunosTotal} de ${alunosTotal}. Fim da lista.`;
+    }
+  } catch (erro) {
+    statusAlunos.textContent = 'Erro ao carregar alunos.';
+  } finally {
+    alunosCarregando = false;
   }
 }
 
-async function deletarAluno(id) {
-  if (!confirm('Deseja realmente excluir este aluno?')) return;
-  const res = await fetch(`/api/alunos/${id}`, { method: 'DELETE' });
-  if (res.ok) {
-    carregarAlunos();
-  } else {
-    const err = await res.json();
-    alert('Erro ao excluir aluno: ' + err.error);
+async function salvarAluno(evento) {
+  evento.preventDefault();
+
+  const novoAluno = {
+    nome: inputAlunoNome.value.trim(),
+    ra: inputAlunoRa.value.trim(),
+    email: inputAlunoEmail.value.trim(),
+    telefone: inputAlunoTel.value.trim(),
+    nascimento: inputAlunoNasc.value,
+    curso_id: Number(selectAlunoCurso.value)
+  };
+
+  try {
+    const resposta = await fetch('/alunos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novoAluno)
+    });
+    const dados = await resposta.json();
+
+    if (!resposta.ok) throw new Error(dados.erro || 'Erro ao salvar aluno');
+
+    formAluno.reset();
+    await listarAlunos(false);
+  } catch (erro) {
+    alert(erro.message);
   }
 }
+
+async function excluirAluno(ra) {
+  if (!confirm(`Deseja excluir o aluno com RA ${ra}?`)) return;
+
+  try {
+    const resposta = await fetch(`/alunos/${encodeURIComponent(ra)}`, { method: 'DELETE' });
+    const dados = await resposta.json();
+
+    if (!resposta.ok) throw new Error(dados.erro || 'Erro ao excluir aluno');
+
+    await listarAlunos(false);
+  } catch (erro) {
+    alert(erro.message);
+  }
+}
+
+// 5. FUNÇÕES DO MODAL (EDIÇÃO PUT)
+
+function abrirModalEditar(aluno) {
+  editNome.value = aluno.nome;
+  editRa.value = aluno.ra;
+  editEmail.value = aluno.email || '';
+  
+  editCurso.innerHTML = selectAlunoCurso.innerHTML;
+  editCurso.value = aluno.curso_id;
+
+  modal.hidden = false;
+}
+
+function fecharModal() {
+  modal.hidden = true;
+  formEdicao.reset();
+}
+
+async function salvarEdicaoAluno(evento) {
+  evento.preventDefault();
+
+  const ra = editRa.value;
+  const dadosAtualizados = {
+    nome: editNome.value.trim(),
+    email: editEmail.value.trim(),
+    curso_id: Number(editCurso.value)
+  };
+
+  try {
+    const resposta = await fetch(`/alunos/${encodeURIComponent(ra)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dadosAtualizados)
+    });
+
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || 'Erro ao atualizar aluno');
+
+    fecharModal();
+    await listarAlunos(false);
+  } catch (erro) {
+    alert(erro.message);
+  }
+}
+
+// 6. DETECÇÃO DE ROLAGEM DA TELA
+function verificarRolagem() {
+  if (!sentinelaAlunos) return;
+  const posicao = sentinelaAlunos.getBoundingClientRect().top;
+  if (posicao < window.innerHeight + 100) {
+    listarAlunos(true);
+  }
+}
+
+// 7. INICIALIZAÇÃO E EVENTOS
+function iniciar() {
+  formCurso.addEventListener('submit', salvarCurso);
+  formAluno.addEventListener('submit', salvarAluno);
+  
+  btnCancelar.addEventListener('click', fecharModal);
+  modalFundo.addEventListener('click', fecharModal);
+  formEdicao.addEventListener('submit', salvarEdicaoAluno);
+
+  window.addEventListener('scroll', verificarRolagem);
+  window.addEventListener('resize', verificarRolagem);
+
+  listarCursos();
+  listarAlunos(false);
+}
+
+iniciar();

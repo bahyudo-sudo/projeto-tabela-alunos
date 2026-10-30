@@ -28,8 +28,21 @@
         </div>
         <button type="submit">Salvar Curso</button>
       </form>
+
       <h3>Lista de Cursos</h3>
-      <ul id="lista-cursos"></ul>
+      <table>
+        <thead>
+          <tr>
+            <th>Curso</th>
+            <th>Carga</th>
+            <th>Turno</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-cursos">
+          <tr><td colspan="4">Carregando cursos...</td></tr>
+        </tbody>
+      </table>
     </section>
 
     <!-- SEÇÃO DE ALUNOS -->
@@ -50,9 +63,48 @@
         </select>
         <button type="submit">Salvar Aluno</button>
       </form>
+
       <h3>Lista de Alunos</h3>
-      <ul id="lista-alunos"></ul>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>RA</th>
+            <th>E-mail</th>
+            <th>Curso</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-alunos">
+          <tr><td colspan="5">Carregando alunos...</td></tr>
+        </tbody>
+      </table>
+
+      <!-- Elementos da Rolagem Dinâmica -->
+      <p id="alunos-status" class="rolagem-status">Carregando...</p>
+      <div id="sentinela-alunos" aria-hidden="true"></div>
     </section>
+
+    <!-- MODAL DE EDIÇÃO DE ALUNO -->
+    <div id="modal" class="modal" hidden>
+      <div class="modal-fundo" id="modal-fundo"></div>
+      <div class="modal-caixa">
+        <h2 id="modal-titulo">Editar Aluno</h2>
+        <form id="form-edicao">
+          <input type="text" id="edit-nome" placeholder="Nome Completo" required>
+          <input type="text" id="edit-ra" placeholder="RA" disabled>
+          <input type="email" id="edit-email" placeholder="E-mail" required>
+          <select id="edit-curso" required>
+            <option value="">Selecione um Curso</option>
+          </select>
+          <div class="modal-acoes">
+            <button type="button" id="btn-cancelar">Cancelar</button>
+            <button type="submit">Salvar Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 
   <script src="app.js"></script>
